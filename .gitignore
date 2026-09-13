@@ -1,0 +1,4 @@
+.env
+node_modules/
+dist/
+server/.google-ads-payload-cache.json

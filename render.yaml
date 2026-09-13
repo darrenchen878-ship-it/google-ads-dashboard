@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: google-ads-dashboard
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATA_MODE
+        value: script
+      - key: SHEETS_SYNC_URL
+        sync: false
+      - key: SHEETS_SYNC_TOKEN
+        sync: false
