@@ -723,6 +723,13 @@ function GroupedKeywordTable({ rows, toolbar }) {
   }, [rows, sort]);
 
   const groups = useMemo(() => {
+    const emptyTotals = () => ({
+      cost: 0,
+      clicks: 0,
+      impressions: 0,
+      conversions: 0,
+      conversionValue: 0
+    });
     const map = new Map();
     for (const row of sortedRows) {
       const campaignKey = row.campaignId || row.campaignName || "unknown-campaign";
@@ -732,7 +739,8 @@ function GroupedKeywordTable({ rows, toolbar }) {
           id: campaignKey,
           name: row.campaignName || "Unknown campaign",
           children: [],
-          totals: { cost: 0, clicks: 0, impressions: 0, conversions: 0, conversionValue: 0 }
+          totals: emptyTotals(),
+          previousTotals: emptyTotals()
         });
       }
       const campaign = map.get(campaignKey);
@@ -742,7 +750,8 @@ function GroupedKeywordTable({ rows, toolbar }) {
           id: groupKey,
           name: row.adGroupName || "Unknown ad group",
           children: [],
-          totals: { cost: 0, clicks: 0, impressions: 0, conversions: 0, conversionValue: 0 }
+          totals: emptyTotals(),
+          previousTotals: emptyTotals()
         };
         campaign.children.push(group);
       }
@@ -753,10 +762,21 @@ function GroupedKeywordTable({ rows, toolbar }) {
         target.totals.impressions += row.impressions || 0;
         target.totals.conversions += row.conversions || 0;
         target.totals.conversionValue += row.conversionValue || 0;
+        target.previousTotals.cost += row.previous?.cost || 0;
+        target.previousTotals.clicks += row.previous?.clicks || 0;
+        target.previousTotals.impressions += row.previous?.impressions || 0;
+        target.previousTotals.conversions += row.previous?.conversions || 0;
+        target.previousTotals.conversionValue += row.previous?.conversionValue || 0;
       }
     }
+    const deriveMetricTotals = (totals) => ({
+      ...totals,
+      ctr: totals.impressions ? totals.clicks / totals.impressions : 0,
+      cpc: totals.clicks ? totals.cost / totals.clicks : 0,
+      roas: totals.cost ? totals.conversionValue / totals.cost : 0
+    });
     const deriveTotals = (item) => {
-      const totals = item.totals;
+      const totals = deriveMetricTotals(item.totals);
       const row = {
         ...item,
         cost: totals.cost,
@@ -767,7 +787,7 @@ function GroupedKeywordTable({ rows, toolbar }) {
         ctr: totals.impressions ? totals.clicks / totals.impressions : 0,
         cpc: totals.clicks ? totals.cost / totals.clicks : 0,
         roas: totals.cost ? totals.conversionValue / totals.cost : 0,
-        previous: { cost: 0, ctr: 0, cpc: 0, conversions: 0, conversionValue: 0, roas: 0 }
+        previous: deriveMetricTotals(item.previousTotals || emptyTotals())
       };
       return {
         ...row,
