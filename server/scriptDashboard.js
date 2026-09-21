@@ -24,6 +24,12 @@ function number(value) {
   return Number(value || 0);
 }
 
+function nullableNumber(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function dateOnly(value) {
   if (!value) return "";
   const text = String(value);
@@ -35,6 +41,7 @@ function normalize(row, product = false, keyword = false) {
   const clicks = number(row.clicks);
   const impressions = number(row.impressions);
   const conversionValue = number(row.conversion_value);
+  const impressionShare = nullableNumber(row.impression_share);
   return {
     date: dateOnly(row.date),
     period: row.period,
@@ -51,6 +58,7 @@ function normalize(row, product = false, keyword = false) {
     clicks,
     cost,
     ctr: impressions ? clicks / impressions : 0,
+    impressionShare,
     cpc: clicks ? cost / clicks : 0,
     conversions: number(row.conversions),
     conversionValue,
@@ -63,7 +71,10 @@ function derive(row) {
     ...row,
     ctr: row.impressions ? row.clicks / row.impressions : 0,
     cpc: row.clicks ? row.cost / row.clicks : 0,
-    roas: row.cost ? row.conversionValue / row.cost : 0
+    roas: row.cost ? row.conversionValue / row.cost : 0,
+    impressionShare: row.impressionShareWeight
+      ? row.impressionShareWeighted / row.impressionShareWeight
+      : null
   };
 }
 
@@ -74,9 +85,23 @@ function sumRows(rows) {
       clicks: sum.clicks + row.clicks,
       cost: sum.cost + row.cost,
       conversions: sum.conversions + row.conversions,
-      conversionValue: sum.conversionValue + row.conversionValue
+      conversionValue: sum.conversionValue + row.conversionValue,
+      impressionShareWeighted: sum.impressionShareWeighted
+        + (row.impressionShare === null || row.impressionShare === undefined
+          ? 0
+          : row.impressionShare * row.impressions),
+      impressionShareWeight: sum.impressionShareWeight
+        + (row.impressionShare === null || row.impressionShare === undefined ? 0 : row.impressions)
     }),
-    { impressions: 0, clicks: 0, cost: 0, conversions: 0, conversionValue: 0 }
+    {
+      impressions: 0,
+      clicks: 0,
+      cost: 0,
+      conversions: 0,
+      conversionValue: 0,
+      impressionShareWeighted: 0,
+      impressionShareWeight: 0
+    }
   );
   return derive(totals);
 }

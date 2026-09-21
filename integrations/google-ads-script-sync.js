@@ -27,7 +27,7 @@ function writeCampaignRows(spreadsheet, dates) {
   var sheet = getSheet(spreadsheet, "campaign_daily");
   var headers = [
     "period", "date", "campaign_id", "campaign_name", "channel_type",
-    "impressions", "clicks", "ctr", "average_cpc", "cost",
+    "impressions", "clicks", "ctr", "impression_share", "average_cpc", "cost",
     "conversions", "conversion_value"
   ];
   resetSheet(sheet, headers);
@@ -58,7 +58,7 @@ function writeKeywordRows(spreadsheet, dates) {
   var headers = [
     "period", "date", "campaign_id", "campaign_name", "channel_type",
     "ad_group_id", "ad_group_name", "keyword", "match_type",
-    "impressions", "clicks", "ctr", "average_cpc", "cost",
+    "impressions", "clicks", "ctr", "impression_share", "average_cpc", "cost",
     "conversions", "conversion_value"
   ];
   resetSheet(sheet, headers);
@@ -102,6 +102,9 @@ function queryRows(query, period) {
     var conversionValue = Number(metrics.conversionsValue || 0);
     var averageCpc = Number(metrics.averageCpc || 0) / 1000000;
     var ctr = Number(metrics.ctr || (impressions ? clicks / impressions : 0));
+    var impressionShare = metrics.searchImpressionShare === undefined
+      ? ""
+      : Number(metrics.searchImpressionShare || 0);
 
     if (row.shoppingPerformanceView) {
       rows.push([
@@ -114,7 +117,7 @@ function queryRows(query, period) {
       rows.push([
         period, segments.date, String(campaign.id || ""),
         campaign.name || "", campaign.advertisingChannelType || "",
-        impressions, clicks, ctr, averageCpc, cost, conversions, conversionValue
+        impressions, clicks, ctr, impressionShare, averageCpc, cost, conversions, conversionValue
       ]);
     }
   }
@@ -141,13 +144,16 @@ function queryKeywordRows(query, period) {
     var conversionValue = Number(metrics.conversionsValue || 0);
     var averageCpc = Number(metrics.averageCpc || 0) / 1000000;
     var ctr = Number(metrics.ctr || (impressions ? clicks / impressions : 0));
+    var impressionShare = metrics.searchImpressionShare === undefined
+      ? ""
+      : Number(metrics.searchImpressionShare || 0);
 
     rows.push([
       period, segments.date, String(campaign.id || ""),
       campaign.name || "", campaign.advertisingChannelType || "",
       String(adGroup.id || ""), adGroup.name || "",
       keyword.text || "", keyword.matchType || "",
-      impressions, clicks, ctr, averageCpc, cost, conversions, conversionValue
+      impressions, clicks, ctr, impressionShare, averageCpc, cost, conversions, conversionValue
     ]);
   }
 
@@ -173,6 +179,9 @@ function querySearchTermRows(query, period) {
     var conversionValue = Number(metrics.conversionsValue || 0);
     var averageCpc = Number(metrics.averageCpc || 0) / 1000000;
     var ctr = Number(metrics.ctr || (impressions ? clicks / impressions : 0));
+    var impressionShare = metrics.searchImpressionShare === undefined
+      ? ""
+      : Number(metrics.searchImpressionShare || 0);
 
     rows.push([
       period, segments.date, String(campaign.id || ""),
@@ -180,7 +189,7 @@ function querySearchTermRows(query, period) {
       String(adGroup.id || ""), adGroup.name || "",
       searchTermView.searchTerm || keywordInfo.text || "",
       keywordInfo.matchType || "",
-      impressions, clicks, ctr, averageCpc, cost, conversions, conversionValue
+      impressions, clicks, ctr, impressionShare, averageCpc, cost, conversions, conversionValue
     ]);
   }
 
@@ -191,7 +200,7 @@ function campaignQuery(range) {
   return [
     "SELECT segments.date, campaign.id, campaign.name,",
     "campaign.advertising_channel_type, metrics.impressions, metrics.clicks,",
-    "metrics.ctr, metrics.average_cpc, metrics.cost_micros,",
+    "metrics.ctr, metrics.search_impression_share, metrics.average_cpc, metrics.cost_micros,",
     "metrics.conversions, metrics.conversions_value",
     "FROM campaign",
     "WHERE segments.date BETWEEN '" + range.start + "' AND '" + range.end + "'",
@@ -217,7 +226,7 @@ function keywordQuery(range) {
     "SELECT segments.date, campaign.id, campaign.name,",
     "campaign.advertising_channel_type, ad_group.id, ad_group.name,",
     "ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type,",
-    "metrics.impressions, metrics.clicks, metrics.ctr, metrics.average_cpc,",
+    "metrics.impressions, metrics.clicks, metrics.ctr, metrics.search_impression_share, metrics.average_cpc,",
     "metrics.cost_micros, metrics.conversions, metrics.conversions_value",
     "FROM keyword_view",
     "WHERE segments.date BETWEEN '" + range.start + "' AND '" + range.end + "'",

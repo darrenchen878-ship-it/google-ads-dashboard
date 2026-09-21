@@ -71,9 +71,10 @@ function formatRate(value) {
 }
 
 function formatMetric(value, key) {
+  if (value === null || value === undefined) return "--";
   if (key === "cost") return formatMoney(value);
   if (key === "cpc") return formatCpc(value);
-  if (key === "ctr") return formatRate(value);
+  if (key === "ctr" || key === "impressionShare") return formatRate(value);
   if (key === "roas") return `${(value || 0).toFixed(2)}x`;
   return formatNumber(value);
 }
@@ -728,7 +729,9 @@ function GroupedKeywordTable({ rows, toolbar }) {
       clicks: 0,
       impressions: 0,
       conversions: 0,
-      conversionValue: 0
+      conversionValue: 0,
+      impressionShareWeighted: 0,
+      impressionShareWeight: 0
     });
     const map = new Map();
     for (const row of sortedRows) {
@@ -762,18 +765,33 @@ function GroupedKeywordTable({ rows, toolbar }) {
         target.totals.impressions += row.impressions || 0;
         target.totals.conversions += row.conversions || 0;
         target.totals.conversionValue += row.conversionValue || 0;
+        target.totals.impressionShareWeighted += row.impressionShare == null
+          ? 0
+          : row.impressionShare * (row.impressions || 0);
+        target.totals.impressionShareWeight += row.impressionShare == null
+          ? 0
+          : row.impressions || 0;
         target.previousTotals.cost += row.previous?.cost || 0;
         target.previousTotals.clicks += row.previous?.clicks || 0;
         target.previousTotals.impressions += row.previous?.impressions || 0;
         target.previousTotals.conversions += row.previous?.conversions || 0;
         target.previousTotals.conversionValue += row.previous?.conversionValue || 0;
+        target.previousTotals.impressionShareWeighted += row.previous?.impressionShare == null
+          ? 0
+          : row.previous.impressionShare * (row.previous.impressions || 0);
+        target.previousTotals.impressionShareWeight += row.previous?.impressionShare == null
+          ? 0
+          : row.previous.impressions || 0;
       }
     }
     const deriveMetricTotals = (totals) => ({
       ...totals,
       ctr: totals.impressions ? totals.clicks / totals.impressions : 0,
       cpc: totals.clicks ? totals.cost / totals.clicks : 0,
-      roas: totals.cost ? totals.conversionValue / totals.cost : 0
+      roas: totals.cost ? totals.conversionValue / totals.cost : 0,
+      impressionShare: totals.impressionShareWeight
+        ? totals.impressionShareWeighted / totals.impressionShareWeight
+        : null
     });
     const deriveTotals = (item) => {
       const totals = deriveMetricTotals(item.totals);
@@ -785,6 +803,7 @@ function GroupedKeywordTable({ rows, toolbar }) {
         conversions: totals.conversions,
         conversionValue: totals.conversionValue,
         ctr: totals.impressions ? totals.clicks / totals.impressions : 0,
+        impressionShare: totals.impressionShare,
         cpc: totals.clicks ? totals.cost / totals.clicks : 0,
         roas: totals.cost ? totals.conversionValue / totals.cost : 0,
         previous: deriveMetricTotals(item.previousTotals || emptyTotals())
@@ -807,6 +826,7 @@ function GroupedKeywordTable({ rows, toolbar }) {
     return <>
       <MetricCell value={row.cost} previous={row.previous?.cost} metric="cost" />
       <MetricCell value={row.ctr} previous={row.previous?.ctr} metric="ctr" />
+      <MetricCell value={row.impressionShare} previous={row.previous?.impressionShare} metric="impressionShare" />
       <MetricCell value={row.cpc} previous={row.previous?.cpc} metric="cpc" inverse />
       <MetricCell value={row.conversions} previous={row.previous?.conversions} metric="number" />
       <MetricCell value={row.conversionValue} previous={row.previous?.conversionValue} metric="cost" />
@@ -845,6 +865,7 @@ function GroupedKeywordTable({ rows, toolbar }) {
               <SortHeader label="广告组" sortKey="adGroupName" sort={sort} onSort={sortRows} align="left" />
                 <SortHeader label="Cost" secondary="同期变化" sortKey="cost" sort={sort} onSort={sortRows} />
                 <SortHeader label="CTR" secondary="同期变化" sortKey="ctr" sort={sort} onSort={sortRows} />
+                <SortHeader label="IS" secondary="同期变化" sortKey="impressionShare" sort={sort} onSort={sortRows} />
                 <SortHeader label="CPC" secondary="同期变化" sortKey="cpc" sort={sort} onSort={sortRows} />
                 <SortHeader label="Conv." secondary="同期变化" sortKey="conversions" sort={sort} onSort={sortRows} />
                 <SortHeader label="收入 Value" secondary="同期变化" sortKey="conversionValue" sort={sort} onSort={sortRows} />
@@ -879,7 +900,7 @@ function GroupedKeywordTable({ rows, toolbar }) {
                 ...(expanded[adGroup.id] ? adGroup.children.map(renderKeyword) : [])
               ]) : [])
             ]) : (
-              <tr><td colSpan="9" className="empty-cell">暂无 Search 关键词数据，请先在 Google Ads Script 中运行关键词同步。</td></tr>
+              <tr><td colSpan="10" className="empty-cell">暂无 Search 关键词数据，请先在 Google Ads Script 中运行关键词同步。</td></tr>
             )}
           </tbody>
         </table>
