@@ -366,7 +366,9 @@ function keywordViewForRows(keywordRows) {
     return {
       ...row,
       campaignName: source?.campaignName || "",
+      campaignId: source?.campaignId || "",
       adGroupName: source?.adGroupName || "",
+      adGroupId: source?.adGroupId || "",
       matchType: source?.matchType || ""
     };
   });

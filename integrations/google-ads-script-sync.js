@@ -64,9 +64,26 @@ function writeKeywordRows(spreadsheet, dates) {
   resetSheet(sheet, headers);
 
   var rows = [];
-  rows = rows.concat(queryKeywordRows(keywordQuery(dates.current), "current"));
-  rows = rows.concat(queryKeywordRows(keywordQuery(dates.previous), "previous"));
+  rows = rows.concat(queryKeywordRowsWithFallback(keywordQuery(dates.current), "current"));
+  rows = rows.concat(queryKeywordRowsWithFallback(keywordQuery(dates.previous), "previous"));
   appendRows(sheet, rows);
+}
+
+function queryKeywordRowsWithFallback(query, period) {
+  try {
+    var keywordRows = queryKeywordRows(query, period);
+    if (keywordRows.length) return keywordRows;
+    Logger.log("keyword_view returned no rows for " + period + "; trying search_term_view.");
+  } catch (error) {
+    Logger.log("keyword_view failed for " + period + ": " + error.message + "; trying search_term_view.");
+  }
+
+  try {
+    return querySearchTermRows(searchTermQuery(query), period);
+  } catch (error) {
+    Logger.log("search_term_view failed for " + period + ": " + error.message);
+    return [];
+  }
 }
 
 function queryRows(query, period) {
@@ -137,6 +154,39 @@ function queryKeywordRows(query, period) {
   return rows;
 }
 
+function querySearchTermRows(query, period) {
+  var rows = [];
+  var results = AdsApp.search(query);
+
+  while (results.hasNext()) {
+    var row = results.next();
+    var metrics = row.metrics || {};
+    var campaign = row.campaign || {};
+    var adGroup = row.adGroup || {};
+    var searchTermView = row.searchTermView || {};
+    var segments = row.segments || {};
+    var keywordInfo = segments.keyword && segments.keyword.info ? segments.keyword.info : {};
+    var cost = Number(metrics.costMicros || 0) / 1000000;
+    var clicks = Number(metrics.clicks || 0);
+    var impressions = Number(metrics.impressions || 0);
+    var conversions = Number(metrics.conversions || 0);
+    var conversionValue = Number(metrics.conversionsValue || 0);
+    var averageCpc = Number(metrics.averageCpc || 0) / 1000000;
+    var ctr = Number(metrics.ctr || (impressions ? clicks / impressions : 0));
+
+    rows.push([
+      period, segments.date, String(campaign.id || ""),
+      campaign.name || "", campaign.advertisingChannelType || "",
+      String(adGroup.id || ""), adGroup.name || "",
+      searchTermView.searchTerm || keywordInfo.text || "",
+      keywordInfo.matchType || "",
+      impressions, clicks, ctr, averageCpc, cost, conversions, conversionValue
+    ]);
+  }
+
+  return rows;
+}
+
 function campaignQuery(range) {
   return [
     "SELECT segments.date, campaign.id, campaign.name,",
@@ -173,8 +223,22 @@ function keywordQuery(range) {
     "WHERE segments.date BETWEEN '" + range.start + "' AND '" + range.end + "'",
     "AND campaign.advertising_channel_type = 'SEARCH'",
     "AND campaign.status != 'REMOVED'",
+    "AND ad_group_criterion.status != 'REMOVED'",
     "ORDER BY segments.date"
   ].join(" ");
+}
+
+function searchTermQuery(keywordQueryText) {
+  return keywordQueryText
+    .replace("FROM keyword_view", "FROM search_term_view")
+    .replace(
+      "ad_group_criterion.keyword.text, ad_group_criterion.keyword.match_type,",
+      "segments.keyword.info.text, segments.keyword.info.match_type,"
+    )
+    .replace(
+      "ad_group_criterion.status != 'REMOVED'",
+      "search_term_view.status != 'UNKNOWN'"
+    );
 }
 
 function getDateRanges(days) {

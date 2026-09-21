@@ -706,7 +706,8 @@ function KpiGrid({ summary = {}, delta = {} }) {
   );
 }
 
-function KeywordTable({ rows, toolbar }) {
+function GroupedKeywordTable({ rows, toolbar }) {
+  const [expanded, setExpanded] = useState({});
   const [sort, setSort] = useState({ key: null, direction: "desc" });
   const sortRows = (sortKey) => {
     setSort((current) => current.key === sortKey
@@ -720,12 +721,93 @@ function KeywordTable({ rows, toolbar }) {
       return sort.direction === "asc" ? result : -result;
     });
   }, [rows, sort]);
+
+  const groups = useMemo(() => {
+    const map = new Map();
+    for (const row of sortedRows) {
+      const campaignKey = row.campaignId || row.campaignName || "unknown-campaign";
+      const groupKey = `${campaignKey}::${row.adGroupId || row.adGroupName || "unknown-ad-group"}`;
+      if (!map.has(campaignKey)) {
+        map.set(campaignKey, {
+          id: campaignKey,
+          name: row.campaignName || "Unknown campaign",
+          children: [],
+          totals: { cost: 0, clicks: 0, impressions: 0, conversions: 0, conversionValue: 0 }
+        });
+      }
+      const campaign = map.get(campaignKey);
+      let group = campaign.children.find((item) => item.id === groupKey);
+      if (!group) {
+        group = {
+          id: groupKey,
+          name: row.adGroupName || "Unknown ad group",
+          children: [],
+          totals: { cost: 0, clicks: 0, impressions: 0, conversions: 0, conversionValue: 0 }
+        };
+        campaign.children.push(group);
+      }
+      group.children.push(row);
+      for (const target of [campaign, group]) {
+        target.totals.cost += row.cost || 0;
+        target.totals.clicks += row.clicks || 0;
+        target.totals.impressions += row.impressions || 0;
+        target.totals.conversions += row.conversions || 0;
+        target.totals.conversionValue += row.conversionValue || 0;
+      }
+    }
+    const deriveTotals = (item) => {
+      const totals = item.totals;
+      const row = {
+        ...item,
+        cost: totals.cost,
+        clicks: totals.clicks,
+        impressions: totals.impressions,
+        conversions: totals.conversions,
+        conversionValue: totals.conversionValue,
+        ctr: totals.impressions ? totals.clicks / totals.impressions : 0,
+        cpc: totals.clicks ? totals.cost / totals.clicks : 0,
+        roas: totals.cost ? totals.conversionValue / totals.cost : 0,
+        previous: { cost: 0, ctr: 0, cpc: 0, conversions: 0, conversionValue: 0, roas: 0 }
+      };
+      return { ...row, children: item.children?.map(deriveTotals) };
+    };
+    return [...map.values()].map(deriveTotals);
+  }, [sortedRows]);
+
+  function toggle(id) {
+    setExpanded((current) => ({ ...current, [id]: !current[id] }));
+  }
+
+  function metricCells(row) {
+    return <>
+      <MetricCell value={row.cost} previous={row.previous?.cost} metric="cost" />
+      <MetricCell value={row.ctr} previous={row.previous?.ctr} metric="ctr" />
+      <MetricCell value={row.cpc} previous={row.previous?.cpc} metric="cpc" inverse />
+      <MetricCell value={row.conversions} previous={row.previous?.conversions} metric="number" />
+      <MetricCell value={row.conversionValue} previous={row.previous?.conversionValue} metric="cost" />
+      <MetricCell value={row.roas} previous={row.previous?.roas} metric="roas" />
+    </>;
+  }
+
+  function renderKeyword(row) {
+    return <tr key={`keyword-${row.id}`} className="campaign-child-row keyword-detail-row">
+      <td>
+        <span className="child-branch" />
+        <strong>{row.name}</strong>
+        <span>{row.matchType || "--"}</span>
+      </td>
+      <td>{row.matchType || "--"}</td>
+      <td>{row.adGroupName || "--"}</td>
+      {metricCells(row)}
+    </tr>;
+  }
+
   return (
     <section className="panel table-panel">
       <div className="panel-title">
         <div>
           <h2>Search 关键词数据</h2>
-          <p>按关键词、广告组聚合，支持当前周期与上月同期对比</p>
+          <p>按 Campaign 分组，点击下拉查看广告组和 Search Keyword 明细</p>
         </div>
         {toolbar}
       </div>
@@ -733,9 +815,9 @@ function KeywordTable({ rows, toolbar }) {
         <table className="keyword-table">
           <thead>
             <tr>
-              <SortHeader label="关键词" sortKey="name" sort={sort} onSort={sortRows} align="left" />
-              <SortHeader label="广告组" sortKey="adGroupName" sort={sort} onSort={sortRows} align="left" />
+              <SortHeader label="Campaign / Keyword" sortKey="campaignName" sort={sort} onSort={sortRows} align="left" />
               <SortHeader label="匹配类型" sortKey="matchType" sort={sort} onSort={sortRows} align="left" />
+              <SortHeader label="广告组" sortKey="adGroupName" sort={sort} onSort={sortRows} align="left" />
                 <SortHeader label="Cost" secondary="同期变化" sortKey="cost" sort={sort} onSort={sortRows} />
                 <SortHeader label="CTR" secondary="同期变化" sortKey="ctr" sort={sort} onSort={sortRows} />
                 <SortHeader label="CPC" secondary="同期变化" sortKey="cpc" sort={sort} onSort={sortRows} />
@@ -745,20 +827,34 @@ function KeywordTable({ rows, toolbar }) {
             </tr>
           </thead>
           <tbody>
-            {rows.length ? sortedRows.map((row) => (
-              <tr key={row.id}>
-                <td><strong>{row.name}</strong><span>{row.campaignName}</span></td>
-                <td>{row.adGroupName || "--"}</td>
-                <td>{row.matchType || "--"}</td>
-                <MetricCell value={row.cost} previous={row.previous?.cost} metric="cost" />
-                <MetricCell value={row.ctr} previous={row.previous?.ctr} metric="ctr" />
-                <MetricCell value={row.cpc} previous={row.previous?.cpc} metric="cpc" inverse />
-                <MetricCell value={row.conversions} previous={row.previous?.conversions} metric="number" />
-                <MetricCell value={row.conversionValue} previous={row.previous?.conversionValue} metric="cost" />
-                <MetricCell value={row.roas} previous={row.previous?.roas} metric="roas" />
-              </tr>
-            )) : (
-              <tr><td colSpan="9" className="empty-cell">暂无 Search 关键词数据，请先运行 Google Ads Script 同步。</td></tr>
+            {rows.length ? groups.flatMap((campaign) => [
+              <tr key={`keyword-campaign-${campaign.id}`} className="campaign-group-row">
+                <td>
+                  <button className="expand-button" type="button" onClick={() => toggle(campaign.id)} aria-label={`${expanded[campaign.id] ? "收起" : "展开"} ${campaign.name}`}>
+                    {expanded[campaign.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </button>
+                  <strong>{campaign.name}</strong>
+                </td>
+                <td>Search</td>
+                <td>{campaign.children.length} 个广告组</td>
+                {metricCells(campaign)}
+              </tr>,
+              ...(expanded[campaign.id] ? campaign.children.flatMap((adGroup) => [
+                <tr key={`keyword-ad-group-${adGroup.id}`} className="campaign-child-row campaign-group-row">
+                  <td>
+                    <button className="expand-button" type="button" onClick={() => toggle(adGroup.id)} aria-label={`${expanded[adGroup.id] ? "收起" : "展开"} ${adGroup.name}`}>
+                      {expanded[adGroup.id] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                    </button>
+                    <strong>{adGroup.name}</strong>
+                  </td>
+                  <td>广告组</td>
+                  <td>{adGroup.children.length} 个关键词</td>
+                  {metricCells(adGroup)}
+                </tr>,
+                ...(expanded[adGroup.id] ? adGroup.children.map(renderKeyword) : [])
+              ]) : [])
+            ]) : (
+              <tr><td colSpan="9" className="empty-cell">暂无 Search 关键词数据，请先在 Google Ads Script 中运行关键词同步。</td></tr>
             )}
           </tbody>
         </table>
@@ -982,7 +1078,7 @@ function App() {
           <ViewHeading eyebrow="Search keywords" title="Search Campaign 关键词数据" description="查看 Search 关键词的 Cost、CTR、CPC、ROAS，并与上月同期对比。" />
           <KpiGrid summary={keywordView?.summary} delta={keywordView?.summary?.delta} />
           <ChartPanel data={mergeSeries(keywordView?.series?.current, keywordView?.series?.previous)} />
-          <KeywordTable rows={keywordView?.byKeyword ?? []} toolbar={renderCampaignSelector()} />
+          <GroupedKeywordTable rows={keywordView?.byKeyword ?? []} toolbar={renderCampaignSelector()} />
         </>
       );
     }
