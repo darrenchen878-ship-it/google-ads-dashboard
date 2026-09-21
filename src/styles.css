@@ -1584,3 +1584,261 @@ footer {
     flex-direction: column;
   }
 }
+
+/* Dense desktop layout: keep the dashboard readable without forcing page-wide
+   horizontal scrolling, while leaving the mobile layout intentionally roomy. */
+@media (min-width: 721px) {
+  .sidebar {
+    flex-basis: 214px;
+    width: 214px;
+    padding: 20px 12px 14px;
+  }
+
+  .brand-mark {
+    padding: 0 8px 22px;
+  }
+
+  .sidebar-label {
+    padding-bottom: 6px;
+  }
+
+  .side-nav {
+    gap: 3px;
+  }
+
+  .side-nav-item {
+    min-height: 38px;
+    font-size: 13px;
+  }
+
+  .app-main {
+    padding: 18px 24px 22px;
+  }
+
+  .topbar {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+
+  .controls {
+    gap: 5px;
+  }
+
+  .select-control,
+  .date-control,
+  .apply-button,
+  .icon-button {
+    height: 36px;
+  }
+
+  .select-control {
+    min-width: 126px;
+    padding: 3px 8px;
+  }
+
+  .select-control span,
+  .inline-select span {
+    font-size: 9px;
+  }
+
+  .select-control select,
+  .date-control input {
+    font-size: 11px;
+  }
+
+  .date-control {
+    grid-template-columns: 13px auto minmax(92px, 1fr);
+    gap: 4px;
+    padding: 0 7px;
+  }
+
+  .date-control input {
+    width: 105px;
+  }
+
+  .apply-button {
+    padding: 0 11px;
+    font-size: 11px;
+  }
+
+  .icon-button {
+    width: 36px;
+  }
+
+  .view-heading {
+    margin-bottom: 12px;
+  }
+
+  h1 {
+    margin-top: 4px;
+    font-size: 28px;
+  }
+
+  .view-heading p,
+  .panel-title p {
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  .eyebrow {
+    font-size: 10px;
+  }
+
+  .kpi-grid {
+    margin-bottom: 12px;
+  }
+
+  .kpi-card {
+    min-height: 96px;
+    padding: 10px 12px;
+  }
+
+  .kpi-top {
+    margin-bottom: 9px;
+  }
+
+  .icon-box {
+    width: 22px;
+    height: 22px;
+  }
+
+  .delta {
+    font-size: 10px;
+  }
+
+  .kpi-value {
+    font-size: 22px;
+  }
+
+  .kpi-previous,
+  .kpi-label {
+    margin-top: 3px;
+    font-size: 10px;
+  }
+
+  .chart-panel,
+  .channel-mix-panel,
+  .brand-panel,
+  .table-panel {
+    margin-bottom: 12px;
+  }
+
+  .panel {
+    padding: 13px;
+  }
+
+  .panel-title {
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .panel-title h2 {
+    font-size: 16px;
+  }
+
+  .mini-chart {
+    padding: 5px 7px 3px;
+  }
+
+  .mini-chart-title {
+    font-size: 11px;
+  }
+
+  .mini-chart-legend {
+    gap: 8px;
+    font-size: 9px;
+  }
+
+  .chart-panel .mini-chart-grid {
+    min-height: 138px;
+  }
+
+  .inline-select {
+    min-width: 220px;
+    padding: 5px 8px;
+  }
+
+  .inline-select select {
+    font-size: 11px;
+  }
+
+  .table-wrap {
+    overflow-x: hidden;
+  }
+
+  table {
+    width: 100%;
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  th,
+  td {
+    padding: 8px 7px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  th:first-child,
+  td:first-child {
+    width: 32%;
+  }
+
+  th {
+    font-size: 10px;
+  }
+
+  .sortable-header button {
+    min-height: 34px;
+    gap: 3px;
+    padding: 3px 5px;
+    font-size: 10px;
+  }
+
+  .sortable-header small {
+    margin-top: 2px;
+    font-size: 8px;
+  }
+
+  td {
+    font-size: 11px;
+  }
+
+  td strong {
+    max-width: none;
+    line-height: 1.2;
+  }
+
+  td span {
+    margin-top: 2px;
+    font-size: 9px;
+  }
+
+  .metric-cell {
+    min-width: 0;
+  }
+
+  .metric-cell strong {
+    font-size: 12px;
+  }
+
+  .metric-cell .metric-delta {
+    margin-top: 2px;
+    font-size: 8px;
+    line-height: 1.15;
+  }
+
+  .campaign-child-row td:first-child {
+    padding-left: 16px;
+  }
+
+  .campaign-child-row td:first-child strong {
+    max-width: none;
+  }
+
+  .expand-button {
+    width: 18px;
+    height: 18px;
+    margin-right: 3px;
+  }
+}

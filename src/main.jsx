@@ -385,7 +385,7 @@ function MiniMetricChart({ data, metric }) {
   return (
     <div className="mini-chart">
       <div className="mini-chart-title">{labels[metric]}</div>
-      <ResponsiveContainer width="100%" height={150}>
+      <ResponsiveContainer width="100%" height={112}>
         <LineChart data={data}>
           <CartesianGrid strokeDasharray="4 4" vertical={false} />
           <XAxis dataKey="date" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} />
