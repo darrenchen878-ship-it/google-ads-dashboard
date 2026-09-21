@@ -769,7 +769,12 @@ function GroupedKeywordTable({ rows, toolbar }) {
         roas: totals.cost ? totals.conversionValue / totals.cost : 0,
         previous: { cost: 0, ctr: 0, cpc: 0, conversions: 0, conversionValue: 0, roas: 0 }
       };
-      return { ...row, children: item.children?.map(deriveTotals) };
+      return {
+        ...row,
+        children: item.children?.map((child) => (
+          child.totals ? deriveTotals(child) : child
+        ))
+      };
     };
     return [...map.values()].map(deriveTotals);
   }, [sortedRows]);
