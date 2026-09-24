@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Activity,
   BarChart3,
   Boxes,
   CalendarDays,
@@ -11,14 +12,19 @@ import {
   ChevronRight,
   CircleDollarSign,
   Download,
+  Globe2,
   KeyRound,
   LayoutDashboard,
   Layers3,
   LineChart as LineChartIcon,
+  MousePointerClick,
   PackageSearch,
+  Percent,
   RefreshCw,
   Search,
-  ShoppingBag
+  ShoppingBag,
+  ShoppingCart,
+  Users
 } from "lucide-react";
 import {
   Area,
@@ -657,7 +663,8 @@ const navigationItems = [
   { id: "overall", label: "Overall", icon: LayoutDashboard },
   { id: "channels", label: "买法 / Campaign", icon: Layers3 },
   { id: "products", label: "Products", icon: ShoppingBag },
-  { id: "search-keywords", label: "Search Keywords", icon: KeyRound }
+  { id: "search-keywords", label: "Search Keywords", icon: KeyRound },
+  { id: "ga4", label: "GA4 Analytics", icon: Globe2 }
 ];
 
 function Sidebar({ view, onNavigate }) {
@@ -703,6 +710,62 @@ function KpiGrid({ summary = {}, delta = {} }) {
       <KpiCard icon={CircleDollarSign} label="Con. Value" value={formatMoney(current.conversionValue)} previous={formatMoney(previous.conversionValue)} delta={valueDelta(current.conversionValue, previous.conversionValue)} />
       <KpiCard icon={BarChart3} label="ROAS" value={formatMetric(current.roas, "roas")} previous={formatMetric(previous.roas, "roas")} delta={delta.roas} />
       <KpiCard icon={PackageSearch} label="Conversions" value={formatNumber(current.conversions)} previous={formatNumber(previous.conversions)} delta={delta.conversions} />
+    </section>
+  );
+}
+
+function Ga4KpiGrid({ summary = {}, delta = {} }) {
+  const current = summary.current ?? summary;
+  const previous = summary.previous ?? {};
+  return (
+    <section className="kpi-grid">
+      <KpiCard icon={Users} label="Users" value={formatNumber(current.totalUsers)} previous={formatNumber(previous.totalUsers)} delta={delta.totalUsers} />
+      <KpiCard icon={Activity} label="Sessions" value={formatNumber(current.sessions)} previous={formatNumber(previous.sessions)} delta={delta.sessions} />
+      <KpiCard icon={MousePointerClick} label="Engaged sessions" value={formatNumber(current.engagedSessions)} previous={formatNumber(previous.engagedSessions)} delta={delta.engagedSessions} />
+      <KpiCard icon={Percent} label="Engagement rate" value={formatRate(current.engagementRate)} previous={formatRate(previous.engagementRate)} delta={delta.engagementRate} />
+      <KpiCard icon={ShoppingCart} label="Purchases" value={formatNumber(current.purchases)} previous={formatNumber(previous.purchases)} delta={delta.purchases} />
+      <KpiCard icon={CircleDollarSign} label="Revenue" value={formatMoney(current.revenue)} previous={formatMoney(previous.revenue)} delta={delta.revenue} />
+    </section>
+  );
+}
+
+function Ga4ChannelTable({ rows = [] }) {
+  return (
+    <section className="panel table-panel">
+      <div className="panel-title">
+        <div>
+          <h2>GA4 渠道表现</h2>
+          <p>按 Session default channel group 查看流量、参与度、购买与收入。</p>
+        </div>
+      </div>
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th className="align-left">Channel</th>
+              <th>Sessions<br /><small>同期变化</small></th>
+              <th>Users<br /><small>同期变化</small></th>
+              <th>Engagement rate<br /><small>同期变化</small></th>
+              <th>Purchases<br /><small>同期变化</small></th>
+              <th>Revenue<br /><small>同期变化</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length ? rows.map((row) => (
+              <tr key={row.id}>
+                <td><strong>{row.name}</strong></td>
+                <MetricCell value={row.sessions} previous={row.previous?.sessions} metric="number" />
+                <MetricCell value={row.activeUsers} previous={row.previous?.activeUsers} metric="number" />
+                <MetricCell value={row.engagementRate} previous={row.previous?.engagementRate} metric="ctr" />
+                <MetricCell value={row.purchases} previous={row.previous?.purchases} metric="number" />
+                <MetricCell value={row.revenue} previous={row.previous?.revenue} metric="cost" />
+              </tr>
+            )) : (
+              <tr><td colSpan="6" className="empty-cell">暂无 GA4 数据。</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -1129,6 +1192,49 @@ function App() {
       );
     }
 
+    if (view === "ga4") {
+      const ga4View = data?.ga4View;
+      const currentSeries = ga4View?.series?.current ?? [];
+      const previousSeries = ga4View?.series?.previous ?? [];
+      const series = Array.from({ length: Math.max(currentSeries.length, previousSeries.length) }, (_, index) => ({
+        date: currentSeries[index]?.date || previousSeries[index]?.date || "",
+        sessions: currentSeries[index]?.sessions || 0,
+        previousSessions: previousSeries[index]?.sessions || 0,
+        activeUsers: currentSeries[index]?.activeUsers || 0,
+        previousActiveUsers: previousSeries[index]?.activeUsers || 0
+      }));
+      return (
+        <>
+          <ViewHeading eyebrow="GA4 Analytics" title="GA4 网站数据" description="查看网站用户、会话、参与度、购买与收入，并与上一等长周期对比。" />
+          <Ga4KpiGrid summary={ga4View?.summary} delta={ga4View?.summary?.delta} />
+          <section className="panel chart-panel">
+            <div className="panel-title">
+              <div>
+                <h2>GA4 流量趋势</h2>
+                <p>Sessions 与 Users 当前周期 / 同期对比</p>
+              </div>
+            </div>
+            <div className="chart compact">
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={series}>
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} />
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(value) => formatNumber(value)} />
+                  <Legend />
+                  <Line type="monotone" dataKey="sessions" name="当前 Sessions" stroke="#f15b2a" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="previousSessions" name="同期 Sessions" stroke="#64748b" strokeDasharray="4 4" dot={false} />
+                  <Line type="monotone" dataKey="activeUsers" name="当前 Users" stroke="#2563eb" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="previousActiveUsers" name="同期 Users" stroke="#94a3b8" strokeDasharray="4 4" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+          <Ga4ChannelTable rows={ga4View?.byChannel} />
+        </>
+      );
+    }
+
     return (
       <>
         <ViewHeading eyebrow="Account overview" title="Overall" description="全账户 *BM Campaign 的总体表现、品牌结构与渠道分布。" />
@@ -1205,7 +1311,7 @@ function App() {
           <>
             {renderView()}
             <footer>
-              <span>数据源：{data?.source === "google" ? "Google Ads API" : data?.source === "google-ads-script" ? "Google Ads Script + Sheet" : "Mock"}</span>
+              <span>数据源：{data?.ga4View ? "Google Ads Script + Sheet + GA4 Data API" : data?.source === "google" ? "Google Ads API" : data?.source === "google-ads-script" ? "Google Ads Script + Sheet" : "Mock"}</span>
               <span>更新时间：{data?.generatedAt ? new Date(data.generatedAt).toLocaleString() : "--"}</span>
             </footer>
           </>

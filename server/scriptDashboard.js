@@ -30,6 +30,11 @@ function nullableNumber(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function ga4Number(value) {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function dateOnly(value) {
   if (!value) return "";
   const text = String(value);
@@ -405,6 +410,99 @@ function keywordViewForRows(keywordRows) {
   };
 }
 
+function normalizeGa4(row) {
+  return {
+    date: dateOnly(row.date),
+    channel: row.sessionDefaultChannelGroup || "",
+    activeUsers: ga4Number(row.activeUsers),
+    totalUsers: ga4Number(row.totalUsers),
+    newUsers: ga4Number(row.newUsers),
+    sessions: ga4Number(row.sessions),
+    engagedSessions: ga4Number(row.engagedSessions),
+    engagementRate: ga4Number(row.engagementRate),
+    conversions: ga4Number(row.conversions),
+    purchases: ga4Number(row.ecommercePurchases),
+    revenue: ga4Number(row.totalRevenue)
+  };
+}
+
+function ga4Totals(rows) {
+  const totals = rows.reduce((sum, row) => ({
+    activeUsers: sum.activeUsers + row.activeUsers,
+    totalUsers: sum.totalUsers + row.totalUsers,
+    newUsers: sum.newUsers + row.newUsers,
+    sessions: sum.sessions + row.sessions,
+    engagedSessions: sum.engagedSessions + row.engagedSessions,
+    conversions: sum.conversions + row.conversions,
+    purchases: sum.purchases + row.purchases,
+    revenue: sum.revenue + row.revenue,
+    engagementRateWeighted: sum.engagementRateWeighted + row.engagementRate * row.sessions
+  }), {
+    activeUsers: 0,
+    totalUsers: 0,
+    newUsers: 0,
+    sessions: 0,
+    engagedSessions: 0,
+    conversions: 0,
+    purchases: 0,
+    revenue: 0,
+    engagementRateWeighted: 0
+  });
+  return {
+    ...totals,
+    engagementRate: totals.sessions ? totals.engagementRateWeighted / totals.sessions : 0
+  };
+}
+
+function ga4DailySeries(rows) {
+  const groups = groupBy(rows, (row) => row.date);
+  return [...groups.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([date, values]) => ({ date, ...ga4Totals(values) }));
+}
+
+function ga4ViewForRows(ga4Rows, ga4ChannelRows, window) {
+  const periodize = (rows) => rows.map((row) => ({
+    ...row,
+    period: within(row.date, window.current) ? "current" : "previous"
+  })).filter((row) => within(row.date, window.current) || within(row.date, window.previous));
+  const rows = periodize(ga4Rows);
+  const channels = periodize(ga4ChannelRows);
+  const current = rows.filter((row) => row.period === "current");
+  const previous = rows.filter((row) => row.period === "previous");
+  const currentChannels = channels.filter((row) => row.period === "current");
+  const previousChannels = channels.filter((row) => row.period === "previous");
+  const channelKey = (row) => row.channel || "Unassigned";
+  return {
+    summary: {
+      current: ga4Totals(current),
+      previous: ga4Totals(previous),
+      delta: Object.fromEntries(["activeUsers", "totalUsers", "newUsers", "sessions", "engagedSessions", "engagementRate", "conversions", "purchases", "revenue"].map((key) => [
+        key,
+        percentDelta(ga4Totals(current)[key], ga4Totals(previous)[key])
+      ]))
+    },
+    series: {
+      current: ga4DailySeries(current),
+      previous: ga4DailySeries(previous)
+    },
+    byChannel: Array.from(groupBy(currentChannels, channelKey).entries()).map(([name, values]) => {
+      const currentTotal = ga4Totals(values);
+      const previousTotal = ga4Totals(groupBy(previousChannels, channelKey).get(name) || []);
+      return {
+        id: name,
+        name,
+        ...currentTotal,
+        previous: previousTotal,
+        delta: Object.fromEntries(["sessions", "activeUsers", "engagementRate", "conversions", "revenue"].map((key) => [
+          key,
+          percentDelta(currentTotal[key], previousTotal[key])
+        ]))
+      };
+    }).sort((a, b) => b.sessions - a.sessions)
+  };
+}
+
 export async function getScriptDashboard({
   range = "last_30_days",
   startDate = "",
@@ -429,6 +527,8 @@ export async function getScriptDashboard({
   const rawKeywordRows = (payload.keywordRows || [])
     .map((row) => normalize(row, false, true))
     .filter((row) => row.campaignName.includes("*BM"));
+  const rawGa4Rows = (payload.ga4Rows || []).map(normalizeGa4);
+  const rawGa4ChannelRows = (payload.ga4ChannelRows || []).map(normalizeGa4);
   const window = dateWindow(rawCampaignRows, parsed);
   const campaignRows = rawCampaignRows.filter(
     (row) => within(row.date, window.current) || within(row.date, window.previous)
@@ -439,6 +539,7 @@ export async function getScriptDashboard({
   const keywordRows = rawKeywordRows.filter(
     (row) => within(row.date, window.current) || within(row.date, window.previous)
   );
+  const ga4View = ga4ViewForRows(rawGa4Rows, rawGa4ChannelRows, window);
   const campaigns = Array.from(
     new Map(
       campaignRows
@@ -492,6 +593,7 @@ export async function getScriptDashboard({
     campaignView,
     productViews,
     keywordView,
+    ga4View,
     warnings: []
   };
 }
