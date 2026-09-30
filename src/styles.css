@@ -750,6 +750,66 @@ h2 {
   overflow-x: auto;
 }
 
+.benchmark-panel {
+  overflow: hidden;
+}
+
+.benchmark-table-wrap {
+  margin: 0 -2px -2px;
+}
+
+.benchmark-table {
+  min-width: 980px;
+}
+
+.benchmark-table th,
+.benchmark-table td {
+  min-width: 82px;
+  padding: 12px 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.benchmark-table thead tr:first-child th {
+  background: #f3f5f7;
+  color: #4b5963;
+  border-bottom: 1px solid #d7dee2;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+.benchmark-table thead tr:last-child th {
+  background: #fbfcfc;
+  color: #81909b;
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
+.benchmark-table .benchmark-channel-head,
+.benchmark-table .benchmark-channel-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 150px;
+  text-align: left;
+  background: #fff;
+}
+
+.benchmark-table .benchmark-channel-head {
+  z-index: 2;
+  background: #f3f5f7;
+}
+
+.benchmark-table .benchmark-channel-name {
+  color: #17212b;
+  font-size: 13px;
+}
+
+.benchmark-table tbody tr:hover td,
+.benchmark-table tbody tr:hover .benchmark-channel-name {
+  background: #fff7f2;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;

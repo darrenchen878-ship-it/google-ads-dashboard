@@ -387,6 +387,46 @@ function productViewForRows(productRows) {
   };
 }
 
+function monthlyBenchmarkForRows(rows) {
+  const monthGroups = groupBy(
+    rows.filter((row) => row.date),
+    (row) => row.date.slice(0, 7)
+  );
+  const months = Array.from(monthGroups.keys()).sort();
+  const byMonthChannel = [];
+  monthGroups.forEach((monthRows, month) => {
+    const channels = groupBy(monthRows, (row) => row.channelType || "UNKNOWN");
+    channels.forEach((channelRows, channelType) => {
+      byMonthChannel.push({
+        month,
+        channelType,
+        ...sumRows(channelRows)
+      });
+    });
+  });
+  const channelTypes = Array.from(new Set(byMonthChannel.map((row) => row.channelType))).sort();
+  const rowsByChannel = channelTypes.map((channelType) => ({
+    id: channelType,
+    name: channelType === "PERFORMANCE_MAX" ? "PMax" : channelType.replaceAll("_", " "),
+    months: Object.fromEntries(months.map((month) => {
+      const value = byMonthChannel.find((row) => row.channelType === channelType && row.month === month);
+      return [month, value || {
+        month,
+        channelType,
+        impressions: 0,
+        clicks: 0,
+        cost: 0,
+        conversions: 0,
+        conversionValue: 0,
+        ctr: 0,
+        cpc: 0,
+        roas: 0
+      }];
+    }))
+  }));
+  return { months, rows: rowsByChannel };
+}
+
 function keywordViewForRows(keywordRows) {
   const current = keywordRows.filter((row) => row.period === "current");
   const previous = keywordRows.filter((row) => row.period === "previous");
@@ -521,6 +561,7 @@ export async function getScriptDashboard({
   const rawCampaignRows = (payload.campaignRows || [])
     .map((row) => normalize(row))
     .filter((row) => row.campaignName.includes("*BM"));
+  const benchmarkView = monthlyBenchmarkForRows(rawCampaignRows);
   const rawProductRows = (payload.productRows || [])
     .map((row) => normalize(row, true))
     .filter((row) => row.campaignName.includes("*BM"));
@@ -593,6 +634,7 @@ export async function getScriptDashboard({
     campaignView,
     productViews,
     keywordView,
+    benchmarkView,
     ga4View,
     warnings: []
   };

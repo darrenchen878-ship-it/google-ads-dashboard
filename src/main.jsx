@@ -629,6 +629,69 @@ function BrandMix({ rows, filter }) {
   );
 }
 
+function formatBenchmarkMonth(month) {
+  if (!month) return "";
+  const [year, value] = month.split("-");
+  return new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(
+    new Date(Number(year), Number(value) - 1, 1)
+  );
+}
+
+function BenchmarkTable({ benchmark }) {
+  const months = benchmark?.months ?? [];
+  const rows = benchmark?.rows ?? [];
+  return (
+    <section className="panel benchmark-panel">
+      <div className="panel-title">
+        <div>
+          <h2>历史 Benchmark</h2>
+          <p>把每个买法按月份放在一起，直接比较 7 月、8 月、9 月及其他历史月份表现。</p>
+        </div>
+      </div>
+      {!months.length || !rows.length ? (
+        <div className="empty-state">暂无可用的历史月份数据。</div>
+      ) : (
+        <div className="table-wrap benchmark-table-wrap">
+          <table className="benchmark-table">
+            <thead>
+              <tr>
+                <th className="align-left benchmark-channel-head" rowSpan="2">买法</th>
+                {months.map((month) => <th key={month} colSpan="5">{formatBenchmarkMonth(month)}</th>)}
+              </tr>
+              <tr>
+                {months.flatMap((month) => [
+                  <th key={`${month}-cost`}>Cost</th>,
+                  <th key={`${month}-ctr`}>CTR</th>,
+                  <th key={`${month}-cpc`}>CPC</th>,
+                  <th key={`${month}-conv`}>Conv.</th>,
+                  <th key={`${month}-roas`}>ROAS</th>
+                ])}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <th className="align-left benchmark-channel-name">{row.name}</th>
+                  {months.flatMap((month) => {
+                    const value = row.months?.[month] ?? {};
+                    return [
+                      <td key={`${row.id}-${month}-cost`}>{formatMetric(value.cost, "cost")}</td>,
+                      <td key={`${row.id}-${month}-ctr`}>{formatMetric(value.ctr, "ctr")}</td>,
+                      <td key={`${row.id}-${month}-cpc`}>{formatMetric(value.cpc, "cpc")}</td>,
+                      <td key={`${row.id}-${month}-conv`}>{formatMetric(value.conversions, "number")}</td>,
+                      <td key={`${row.id}-${month}-roas`}><strong>{formatMetric(value.roas, "roas")}</strong></td>
+                    ];
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function ProductTrend({ data }) {
   return (
     <section className="panel">
@@ -662,6 +725,7 @@ function ProductTrend({ data }) {
 const navigationItems = [
   { id: "overall", label: "Overall", icon: LayoutDashboard },
   { id: "channels", label: "买法 / Campaign", icon: Layers3 },
+  { id: "benchmark", label: "Benchmark", icon: BarChart3 },
   { id: "products", label: "Products", icon: ShoppingBag },
   { id: "search-keywords", label: "Search Keywords", icon: KeyRound },
   { id: "ga4", label: "GA4 Analytics", icon: Globe2 }
@@ -1136,6 +1200,19 @@ function App() {
             groups={data?.campaignView?.byCampaignGroups ?? []}
             toolbar={renderCampaignSelector()}
           />
+        </>
+      );
+    }
+
+    if (view === "benchmark") {
+      return (
+        <>
+          <ViewHeading
+            eyebrow="Historical benchmark"
+            title="买法历史 Benchmark"
+            description="按月份横向比较每个买法的 Cost、CTR、CPC、Conversions 和 ROAS。"
+          />
+          <BenchmarkTable benchmark={data?.benchmarkView} />
         </>
       );
     }
