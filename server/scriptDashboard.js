@@ -387,44 +387,111 @@ function productViewForRows(productRows) {
   };
 }
 
-function monthlyBenchmarkForRows(rows) {
-  const monthGroups = groupBy(
-    rows.filter((row) => row.date),
-    (row) => row.date.slice(0, 7)
+function classifyCountry(row) {
+  if (/austria/i.test(row.campaignName)) return "Austria";
+  return "Germany";
+}
+
+function classifyCampaignType(row) {
+  if (row.channelType === "PERFORMANCE_MAX") return "PMAX";
+  if (row.channelType === "DEMAND_GEN") return "Demand Gen";
+  if (row.channelType === "SHOPPING") return "Shopping";
+  if (row.channelType === "VIDEO") return "Video";
+  if (row.channelType === "SEARCH") return "Search";
+  return row.channelType || "Unclassified";
+}
+
+function classifyProductCategory(row) {
+  const name = row.campaignName;
+  if (/robot\s+vacuum|vacuums|rv50/i.test(name)) return "Robot Vacuum";
+  if (/doorbell|d235/i.test(name)) return "Doorbell";
+  if (/indoor/i.test(name)) return "Indoor Camera";
+  if (/outdoor|security\s+camera|camera|c560|c575|c610|c660|c675/i.test(name)) return "Outdoor Camera";
+  if (/smart\s+hub|hub/i.test(name)) return "Smart Hub";
+  if (/bundle/i.test(name)) return "Bundle";
+  if (/tp-linkbox|box\s*7/i.test(name)) return "TP-LinkBox";
+  if (/tapo/i.test(name)) return "Tapo";
+  return "Unclassified";
+}
+
+function classifyKeywordType(row) {
+  const name = row.campaignName;
+  if (row.channelType === "SEARCH") {
+    if (/pure\s+brand|category\s+brand|brand/i.test(name)) return "Brand Keywords";
+    return "Product Keywords";
+  }
+  if (row.channelType === "DEMAND_GEN") {
+    return name.split("|").pop()?.replace(/^.*?-\s*/, "").trim() || "Audience";
+  }
+  if (row.channelType === "PERFORMANCE_MAX") {
+    if (/feed only/i.test(name)) return "Feed Only";
+    if (/lapsed customers/i.test(name)) return "Lapsed Customers";
+    return name.split("|").slice(4).join(" | ").trim() || "Audience";
+  }
+  if (row.channelType === "SHOPPING") {
+    if (/brand/i.test(name)) return "Brand Feed";
+    if (/generic/i.test(name)) return "Generic Feed";
+    return "Shopping Feed";
+  }
+  return "Audience";
+}
+
+function monthName(month) {
+  return new Intl.DateTimeFormat("en-US", { month: "long" }).format(
+    new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1, 1)
   );
-  const months = Array.from(monthGroups.keys()).sort();
-  const byMonthChannel = [];
-  monthGroups.forEach((monthRows, month) => {
-    const channels = groupBy(monthRows, (row) => row.channelType || "UNKNOWN");
-    channels.forEach((channelRows, channelType) => {
-      byMonthChannel.push({
+}
+
+function benchmarkMetrics(rows) {
+  const totals = sumRows(rows);
+  return {
+    ...totals,
+    cpm: totals.impressions ? (totals.cost / totals.impressions) * 1000 : 0,
+    cpv: null,
+    vtr: null,
+    cvr: totals.clicks ? totals.conversions / totals.clicks : 0,
+    cpp: totals.conversions ? totals.cost / totals.conversions : 0,
+    ga4Data: null
+  };
+}
+
+function monthlyBenchmarkForRows(rows) {
+  const keyForRow = (row) => {
+    const year = row.date.slice(0, 4);
+    const month = row.date.slice(0, 7);
+    return [
+      classifyCountry(row),
+      classifyProductCategory(row),
+      year,
+      month,
+      classifyCampaignType(row),
+      classifyKeywordType(row)
+    ].join("::");
+  };
+  return Array.from(groupBy(rows.filter((row) => row.date), keyForRow).entries())
+    .map(([id, values]) => {
+      const source = values[0];
+      const month = source.date.slice(0, 7);
+      return {
+        id,
+        country: classifyCountry(source),
+        productCategory: classifyProductCategory(source),
+        year: source.date.slice(0, 4),
         month,
-        channelType,
-        ...sumRows(channelRows)
-      });
-    });
-  });
-  const channelTypes = Array.from(new Set(byMonthChannel.map((row) => row.channelType))).sort();
-  const rowsByChannel = channelTypes.map((channelType) => ({
-    id: channelType,
-    name: channelType === "PERFORMANCE_MAX" ? "PMax" : channelType.replaceAll("_", " "),
-    months: Object.fromEntries(months.map((month) => {
-      const value = byMonthChannel.find((row) => row.channelType === channelType && row.month === month);
-      return [month, value || {
-        month,
-        channelType,
-        impressions: 0,
-        clicks: 0,
-        cost: 0,
-        conversions: 0,
-        conversionValue: 0,
-        ctr: 0,
-        cpc: 0,
-        roas: 0
-      }];
-    }))
-  }));
-  return { months, rows: rowsByChannel };
+        monthName: monthName(month),
+        campaignType: classifyCampaignType(source),
+        keywordType: classifyKeywordType(source),
+        ...benchmarkMetrics(values)
+      };
+    })
+    .sort((a, b) => (
+      a.country.localeCompare(b.country)
+      || a.productCategory.localeCompare(b.productCategory)
+      || a.year.localeCompare(b.year)
+      || a.month.localeCompare(b.month)
+      || a.campaignType.localeCompare(b.campaignType)
+      || a.keywordType.localeCompare(b.keywordType)
+    ));
 }
 
 function keywordViewForRows(keywordRows) {

@@ -759,7 +759,7 @@ h2 {
 }
 
 .benchmark-table {
-  min-width: 980px;
+  min-width: 2200px;
 }
 
 .benchmark-table th,
@@ -770,43 +770,37 @@ h2 {
   white-space: nowrap;
 }
 
-.benchmark-table thead tr:first-child th {
+.benchmark-table thead th {
   background: #f3f5f7;
   color: #4b5963;
   border-bottom: 1px solid #d7dee2;
   font-size: 12px;
   letter-spacing: 0.02em;
+  white-space: normal;
+  vertical-align: middle;
 }
 
-.benchmark-table thead tr:last-child th {
-  background: #fbfcfc;
-  color: #81909b;
-  font-size: 10px;
-  text-transform: uppercase;
-}
-
-.benchmark-table .benchmark-channel-head,
-.benchmark-table .benchmark-channel-name {
+.benchmark-table th:first-child,
+.benchmark-table td:first-child {
   position: sticky;
   left: 0;
   z-index: 1;
-  min-width: 150px;
   text-align: left;
   background: #fff;
 }
 
-.benchmark-table .benchmark-channel-head {
+.benchmark-table thead th:first-child {
   z-index: 2;
   background: #f3f5f7;
 }
 
-.benchmark-table .benchmark-channel-name {
+.benchmark-table tbody td:nth-child(2) {
   color: #17212b;
   font-size: 13px;
 }
 
 .benchmark-table tbody tr:hover td,
-.benchmark-table tbody tr:hover .benchmark-channel-name {
+.benchmark-table tbody tr:hover td:first-child {
   background: #fff7f2;
 }
 

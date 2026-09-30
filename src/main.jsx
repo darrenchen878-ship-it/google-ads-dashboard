@@ -629,59 +629,60 @@ function BrandMix({ rows, filter }) {
   );
 }
 
-function formatBenchmarkMonth(month) {
-  if (!month) return "";
-  const [year, value] = month.split("-");
-  return new Intl.DateTimeFormat("en-US", { month: "short", year: "numeric" }).format(
-    new Date(Number(year), Number(value) - 1, 1)
-  );
-}
-
 function BenchmarkTable({ benchmark }) {
-  const months = benchmark?.months ?? [];
   const rows = benchmark?.rows ?? [];
   return (
     <section className="panel benchmark-panel">
       <div className="panel-title">
         <div>
           <h2>历史 Benchmark</h2>
-          <p>把每个买法按月份放在一起，直接比较 7 月、8 月、9 月及其他历史月份表现。</p>
+          <p>按国家、产品类别、月份、Campaign 类型和关键词类型列出每个买法的历史表现。</p>
         </div>
       </div>
-      {!months.length || !rows.length ? (
+      {!rows.length ? (
         <div className="empty-state">暂无可用的历史月份数据。</div>
       ) : (
         <div className="table-wrap benchmark-table-wrap">
           <table className="benchmark-table">
             <thead>
               <tr>
-                <th className="align-left benchmark-channel-head" rowSpan="2">买法</th>
-                {months.map((month) => <th key={month} colSpan="5">{formatBenchmarkMonth(month)}</th>)}
-              </tr>
-              <tr>
-                {months.flatMap((month) => [
-                  <th key={`${month}-cost`}>Cost</th>,
-                  <th key={`${month}-ctr`}>CTR</th>,
-                  <th key={`${month}-cpc`}>CPC</th>,
-                  <th key={`${month}-conv`}>Conv.</th>,
-                  <th key={`${month}-roas`}>ROAS</th>
-                ])}
+                <th>Country</th>
+                <th>Product Category</th>
+                <th>Year</th>
+                <th>Month</th>
+                <th>Campaign Type</th>
+                <th>Keyword Type / Audience</th>
+                <th>IS</th>
+                <th>CPM</th>
+                <th>CPV</th>
+                <th>VTR</th>
+                <th>CPC</th>
+                <th>CTR</th>
+                <th>CVR</th>
+                <th>CPP</th>
+                <th>ROAS</th>
+                <th>GA4 Data</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id}>
-                  <th className="align-left benchmark-channel-name">{row.name}</th>
-                  {months.flatMap((month) => {
-                    const value = row.months?.[month] ?? {};
-                    return [
-                      <td key={`${row.id}-${month}-cost`}>{formatMetric(value.cost, "cost")}</td>,
-                      <td key={`${row.id}-${month}-ctr`}>{formatMetric(value.ctr, "ctr")}</td>,
-                      <td key={`${row.id}-${month}-cpc`}>{formatMetric(value.cpc, "cpc")}</td>,
-                      <td key={`${row.id}-${month}-conv`}>{formatMetric(value.conversions, "number")}</td>,
-                      <td key={`${row.id}-${month}-roas`}><strong>{formatMetric(value.roas, "roas")}</strong></td>
-                    ];
-                  })}
+                  <td>{row.country}</td>
+                  <td><strong>{row.productCategory}</strong></td>
+                  <td>{row.year}</td>
+                  <td>{row.monthName}</td>
+                  <td>{row.campaignType}</td>
+                  <td>{row.keywordType}</td>
+                  <td>{formatMetric(row.impressionShare, "impressionShare")}</td>
+                  <td>{formatMetric(row.cpm, "cpc")}</td>
+                  <td>{formatMetric(row.cpv, "cpc")}</td>
+                  <td>{formatMetric(row.vtr, "ctr")}</td>
+                  <td>{formatMetric(row.cpc, "cpc")}</td>
+                  <td>{formatMetric(row.ctr, "ctr")}</td>
+                  <td>{formatMetric(row.cvr, "ctr")}</td>
+                  <td>{formatMetric(row.cpp, "cpc")}</td>
+                  <td><strong>{formatMetric(row.roas, "roas")}</strong></td>
+                  <td>{row.ga4Data ?? "--"}</td>
                 </tr>
               ))}
             </tbody>
