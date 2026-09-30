@@ -634,17 +634,31 @@ function BenchmarkTable({ benchmark }) {
   const productCategories = useMemo(() => (
     Array.from(new Set(rows.map((row) => row.productCategory).filter(Boolean))).sort()
   ), [rows]);
-  const campaignTypes = useMemo(() => (
-    Array.from(new Set(rows.map((row) => row.campaignType).filter(Boolean))).sort()
-  ), [rows]);
   const [productCategoryFilter, setProductCategoryFilter] = useState("all");
   const [campaignTypeFilter, setCampaignTypeFilter] = useState("all");
+  const campaignTypes = useMemo(() => (
+    Array.from(new Set(
+      rows
+        .filter((row) => productCategoryFilter === "all" || row.productCategory === productCategoryFilter)
+        .map((row) => row.campaignType)
+        .filter(Boolean)
+    )).sort()
+  ), [rows, productCategoryFilter]);
+  useEffect(() => {
+    if (campaignTypeFilter !== "all" && !campaignTypes.includes(campaignTypeFilter)) {
+      setCampaignTypeFilter("all");
+    }
+  }, [campaignTypeFilter, campaignTypes]);
   const filteredRows = useMemo(() => (
     rows.filter((row) => (
       (productCategoryFilter === "all" || row.productCategory === productCategoryFilter)
       && (campaignTypeFilter === "all" || row.campaignType === campaignTypeFilter)
     ))
   ), [rows, productCategoryFilter, campaignTypeFilter]);
+  function resetBenchmarkFilters() {
+    setProductCategoryFilter("all");
+    setCampaignTypeFilter("all");
+  }
   return (
     <section className="panel benchmark-panel">
       <div className="panel-title">
@@ -652,59 +666,60 @@ function BenchmarkTable({ benchmark }) {
           <h2>历史 Benchmark</h2>
           <p>按月份和国家连续列出每个买法组合，表头可筛选 Product Category。</p>
         </div>
+        {(productCategoryFilter !== "all" || campaignTypeFilter !== "all") ? (
+          <button className="secondary-button" type="button" onClick={resetBenchmarkFilters}>Reset filters</button>
+        ) : null}
       </div>
-      {!filteredRows.length ? (
-        <div className="empty-state">暂无可用的历史月份数据。</div>
-      ) : (
-        <div className="table-wrap benchmark-table-wrap">
-          <table className="benchmark-table">
-            <thead>
-              <tr>
-                <th>Month</th>
-                <th>Country</th>
-                <th>
-                  <label className="benchmark-header-filter">
-                    <span>Product Category</span>
-                    <select
-                      value={productCategoryFilter}
-                      onChange={(event) => setProductCategoryFilter(event.target.value)}
-                    >
-                      <option value="all">All</option>
-                      {productCategories.map((category) => (
-                        <option key={category} value={category}>{category}</option>
-                      ))}
-                    </select>
-                  </label>
-                </th>
-                <th>
-                  <label className="benchmark-header-filter">
-                    <span>Campaign Type</span>
-                    <select
-                      value={campaignTypeFilter}
-                      onChange={(event) => setCampaignTypeFilter(event.target.value)}
-                    >
-                      <option value="all">All</option>
-                      {campaignTypes.map((campaignType) => (
-                        <option key={campaignType} value={campaignType}>{campaignType}</option>
-                      ))}
-                    </select>
-                  </label>
-                </th>
-                <th>Keyword Type / Audience</th>
-                <th>IS</th>
-                <th>CPM</th>
-                <th>CPV</th>
-                <th>VTR</th>
-                <th>CPC</th>
-                <th>CTR</th>
-                <th>CVR</th>
-                <th>CPP</th>
-                <th>ROAS</th>
-                <th>GA4 Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRows.map((row) => (
+      <div className="table-wrap benchmark-table-wrap">
+        <table className="benchmark-table">
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Country</th>
+              <th>
+                <label className="benchmark-header-filter">
+                  <span>Product Category</span>
+                  <select
+                    value={productCategoryFilter}
+                    onChange={(event) => setProductCategoryFilter(event.target.value)}
+                  >
+                    <option value="all">All Categories</option>
+                    {productCategories.map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </label>
+              </th>
+              <th>
+                <label className="benchmark-header-filter">
+                  <span>Campaign Type</span>
+                  <select
+                    value={campaignTypeFilter}
+                    onChange={(event) => setCampaignTypeFilter(event.target.value)}
+                  >
+                    <option value="all">All Types</option>
+                    {campaignTypes.map((campaignType) => (
+                      <option key={campaignType} value={campaignType}>{campaignType}</option>
+                    ))}
+                  </select>
+                </label>
+              </th>
+              <th>Keyword Type / Audience</th>
+              <th>IS</th>
+              <th>CPM</th>
+              <th>CPV</th>
+              <th>VTR</th>
+              <th>CPC</th>
+              <th>CTR</th>
+              <th>CVR</th>
+              <th>CPP</th>
+              <th>ROAS</th>
+              <th>GA4 Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredRows.length ? (
+              filteredRows.map((row) => (
                 <tr key={row.id}>
                   <td>{row.monthName} {row.year}</td>
                   <td>{row.country}</td>
@@ -722,11 +737,17 @@ function BenchmarkTable({ benchmark }) {
                   <td><strong>{formatMetric(row.roas, "roas")}</strong></td>
                   <td>{row.ga4Data ?? "--"}</td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              ))
+            ) : (
+              <tr>
+                <td colSpan="15" className="benchmark-empty-row">
+                  No rows match the current filters. Use All Categories / All Types or Reset filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

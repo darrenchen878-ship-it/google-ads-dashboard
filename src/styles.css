@@ -302,6 +302,18 @@ h2 {
   cursor: pointer;
 }
 
+.secondary-button {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #cfd8de;
+  border-radius: 6px;
+  background: #fff;
+  color: #17212b;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .icon-button {
   display: inline-grid;
   place-items: center;
@@ -869,6 +881,14 @@ h2 {
 .benchmark-table tbody tr:hover td,
 .benchmark-table tbody tr:hover td:first-child {
   background: #fff7f2;
+}
+
+.benchmark-empty-row {
+  padding: 22px 12px;
+  color: #687783;
+  text-align: center !important;
+  font-size: 13px !important;
+  font-weight: 700;
 }
 
 .benchmark-header-filter {
