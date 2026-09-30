@@ -640,101 +640,73 @@ function BenchmarkTable({ benchmark }) {
       ? rows
       : rows.filter((row) => row.productCategory === productCategoryFilter)
   ), [rows, productCategoryFilter]);
-  const sections = useMemo(() => {
-    const map = new Map();
-    filteredRows.forEach((row) => {
-      const key = `${row.country}::${row.year}::${row.month}`;
-      if (!map.has(key)) {
-        map.set(key, {
-          id: key,
-          country: row.country,
-          year: row.year,
-          month: row.month,
-          monthName: row.monthName,
-          rows: []
-        });
-      }
-      map.get(key).rows.push(row);
-    });
-    return Array.from(map.values()).sort((left, right) => (
-      left.country.localeCompare(right.country)
-      || left.year.localeCompare(right.year)
-      || left.month.localeCompare(right.month)
-    ));
-  }, [filteredRows]);
   return (
     <section className="panel benchmark-panel">
       <div className="panel-title">
         <div>
           <h2>历史 Benchmark</h2>
-          <p>按国家和月份分块，表头可筛选 Product Category，再看每个买法组合的核心指标。</p>
+          <p>按月份和国家连续列出每个买法组合，表头可筛选 Product Category。</p>
         </div>
       </div>
-      {!sections.length ? (
+      {!filteredRows.length ? (
         <div className="empty-state">暂无可用的历史月份数据。</div>
       ) : (
-        <div className="benchmark-sections">
-          {sections.map((section) => (
-            <div className="benchmark-section" key={section.id}>
-              <div className="benchmark-section-title">
-                <strong>{section.country}</strong>
-                <span>{section.monthName} {section.year}</span>
-              </div>
-              <div className="table-wrap benchmark-table-wrap">
-                <table className="benchmark-table">
-                  <thead>
-                    <tr>
-                      <th>
-                        <label className="benchmark-header-filter">
-                          <span>Product Category</span>
-                          <select
-                            value={productCategoryFilter}
-                            onChange={(event) => setProductCategoryFilter(event.target.value)}
-                          >
-                            <option value="all">All</option>
-                            {productCategories.map((category) => (
-                              <option key={category} value={category}>{category}</option>
-                            ))}
-                          </select>
-                        </label>
-                      </th>
-                      <th>Campaign Type</th>
-                      <th>Keyword Type / Audience</th>
-                      <th>IS</th>
-                      <th>CPM</th>
-                      <th>CPV</th>
-                      <th>VTR</th>
-                      <th>CPC</th>
-                      <th>CTR</th>
-                      <th>CVR</th>
-                      <th>CPP</th>
-                      <th>ROAS</th>
-                      <th>GA4 Data</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {section.rows.map((row) => (
-                      <tr key={row.id}>
-                        <td><strong>{row.productCategory}</strong></td>
-                        <td>{row.campaignType}</td>
-                        <td>{row.keywordType}</td>
-                        <td>{formatMetric(row.impressionShare, "impressionShare")}</td>
-                        <td>{formatMetric(row.cpm, "cpc")}</td>
-                        <td>{formatMetric(row.cpv, "cpc")}</td>
-                        <td>{formatMetric(row.vtr, "ctr")}</td>
-                        <td>{formatMetric(row.cpc, "cpc")}</td>
-                        <td>{formatMetric(row.ctr, "ctr")}</td>
-                        <td>{formatMetric(row.cvr, "ctr")}</td>
-                        <td>{formatMetric(row.cpp, "cpc")}</td>
-                        <td><strong>{formatMetric(row.roas, "roas")}</strong></td>
-                        <td>{row.ga4Data ?? "--"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ))}
+        <div className="table-wrap benchmark-table-wrap">
+          <table className="benchmark-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Country</th>
+                <th>
+                  <label className="benchmark-header-filter">
+                    <span>Product Category</span>
+                    <select
+                      value={productCategoryFilter}
+                      onChange={(event) => setProductCategoryFilter(event.target.value)}
+                    >
+                      <option value="all">All</option>
+                      {productCategories.map((category) => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </label>
+                </th>
+                <th>Campaign Type</th>
+                <th>Keyword Type / Audience</th>
+                <th>IS</th>
+                <th>CPM</th>
+                <th>CPV</th>
+                <th>VTR</th>
+                <th>CPC</th>
+                <th>CTR</th>
+                <th>CVR</th>
+                <th>CPP</th>
+                <th>ROAS</th>
+                <th>GA4 Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.monthName} {row.year}</td>
+                  <td>{row.country}</td>
+                  <td><strong>{row.productCategory}</strong></td>
+                  <td>{row.campaignType}</td>
+                  <td>{row.keywordType}</td>
+                  <td>{formatMetric(row.impressionShare, "impressionShare")}</td>
+                  <td>{formatMetric(row.cpm, "cpc")}</td>
+                  <td>{formatMetric(row.cpv, "cpc")}</td>
+                  <td>{formatMetric(row.vtr, "ctr")}</td>
+                  <td>{formatMetric(row.cpc, "cpc")}</td>
+                  <td>{formatMetric(row.ctr, "ctr")}</td>
+                  <td>{formatMetric(row.cvr, "ctr")}</td>
+                  <td>{formatMetric(row.cpp, "cpc")}</td>
+                  <td><strong>{formatMetric(row.roas, "roas")}</strong></td>
+                  <td>{row.ga4Data ?? "--"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </section>
