@@ -468,7 +468,7 @@ function monthlyBenchmarkForRows(rows) {
       classifyKeywordType(row)
     ].join("::");
   };
-  return Array.from(groupBy(rows.filter((row) => row.date), keyForRow).entries())
+  const benchmarkRows = Array.from(groupBy(rows.filter((row) => row.date), keyForRow).entries())
     .map(([id, values]) => {
       const source = values[0];
       const month = source.date.slice(0, 7);
@@ -492,6 +492,7 @@ function monthlyBenchmarkForRows(rows) {
       || a.campaignType.localeCompare(b.campaignType)
       || a.keywordType.localeCompare(b.keywordType)
     ));
+  return { rows: benchmarkRows };
 }
 
 function keywordViewForRows(keywordRows) {
