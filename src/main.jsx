@@ -634,12 +634,17 @@ function BenchmarkTable({ benchmark }) {
   const productCategories = useMemo(() => (
     Array.from(new Set(rows.map((row) => row.productCategory).filter(Boolean))).sort()
   ), [rows]);
+  const campaignTypes = useMemo(() => (
+    Array.from(new Set(rows.map((row) => row.campaignType).filter(Boolean))).sort()
+  ), [rows]);
   const [productCategoryFilter, setProductCategoryFilter] = useState("all");
+  const [campaignTypeFilter, setCampaignTypeFilter] = useState("all");
   const filteredRows = useMemo(() => (
-    productCategoryFilter === "all"
-      ? rows
-      : rows.filter((row) => row.productCategory === productCategoryFilter)
-  ), [rows, productCategoryFilter]);
+    rows.filter((row) => (
+      (productCategoryFilter === "all" || row.productCategory === productCategoryFilter)
+      && (campaignTypeFilter === "all" || row.campaignType === campaignTypeFilter)
+    ))
+  ), [rows, productCategoryFilter, campaignTypeFilter]);
   return (
     <section className="panel benchmark-panel">
       <div className="panel-title">
@@ -671,7 +676,20 @@ function BenchmarkTable({ benchmark }) {
                     </select>
                   </label>
                 </th>
-                <th>Campaign Type</th>
+                <th>
+                  <label className="benchmark-header-filter">
+                    <span>Campaign Type</span>
+                    <select
+                      value={campaignTypeFilter}
+                      onChange={(event) => setCampaignTypeFilter(event.target.value)}
+                    >
+                      <option value="all">All</option>
+                      {campaignTypes.map((campaignType) => (
+                        <option key={campaignType} value={campaignType}>{campaignType}</option>
+                      ))}
+                    </select>
+                  </label>
+                </th>
                 <th>Keyword Type / Audience</th>
                 <th>IS</th>
                 <th>CPM</th>
