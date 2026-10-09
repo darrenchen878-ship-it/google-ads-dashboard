@@ -705,6 +705,7 @@ function BenchmarkTable({ benchmark }) {
                 </label>
               </th>
               <th>Keyword Type / Audience</th>
+              <th>Cost</th>
               <th>IS</th>
               <th>CPM</th>
               <th>CPV</th>
@@ -726,6 +727,7 @@ function BenchmarkTable({ benchmark }) {
                   <td><strong>{row.productCategory}</strong></td>
                   <td>{row.campaignType}</td>
                   <td>{row.keywordType}</td>
+                  <td>{formatMetric(row.cost, "cost")}</td>
                   <td>{formatMetric(row.impressionShare, "impressionShare")}</td>
                   <td>{formatMetric(row.cpm, "cpc")}</td>
                   <td>{formatMetric(row.cpv, "cpc")}</td>
@@ -740,7 +742,7 @@ function BenchmarkTable({ benchmark }) {
               ))
             ) : (
               <tr>
-                <td colSpan="15" className="benchmark-empty-row">
+                <td colSpan="16" className="benchmark-empty-row">
                   No rows match the current filters. Use All Categories / All Types or Reset filters.
                 </td>
               </tr>
