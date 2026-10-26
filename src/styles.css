@@ -762,6 +762,45 @@ h2 {
   overflow-x: auto;
 }
 
+.monthly-summary-panel {
+  padding: 14px 18px 16px;
+}
+
+.compact-panel-title {
+  margin-bottom: 10px;
+}
+
+.monthly-summary-wrap {
+  margin-top: 4px;
+}
+
+.monthly-summary-table {
+  min-width: 820px;
+  table-layout: fixed;
+}
+
+.monthly-summary-table th,
+.monthly-summary-table td {
+  padding: 10px 12px;
+}
+
+.monthly-summary-table thead th {
+  background: #f3f5f7;
+  color: #4b5963;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+.monthly-summary-table tbody td {
+  color: #17212b;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.monthly-summary-table .monthly-name {
+  color: #17212b;
+}
+
 .benchmark-panel {
   overflow: hidden;
 }

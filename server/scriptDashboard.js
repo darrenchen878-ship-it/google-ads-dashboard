@@ -361,6 +361,7 @@ function viewForRows(campaignRows, productRows) {
 
   return {
     summary: comparison(current, previous),
+    monthlySummary: monthlySummaryForRows(current),
     series: { current: dailySeries(current), previous: dailySeries(previous) },
     channelSeries: channelDailySeries(campaignRows),
     brandSeries: {
@@ -453,6 +454,17 @@ function benchmarkMetrics(rows) {
     cpp: totals.conversions ? totals.cost / totals.conversions : 0,
     ga4Data: null
   };
+}
+
+function monthlySummaryForRows(rows) {
+  return Array.from(groupBy(rows.filter((row) => row.date), (row) => row.date.slice(0, 7)).entries())
+    .map(([month, values]) => ({
+      month,
+      monthName: monthName(month),
+      year: month.slice(0, 4),
+      ...sumRows(values)
+    }))
+    .sort((a, b) => a.month.localeCompare(b.month));
 }
 
 function monthlyBenchmarkForRows(rows) {

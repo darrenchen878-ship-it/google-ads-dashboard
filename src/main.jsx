@@ -840,6 +840,51 @@ function KpiGrid({ summary = {}, delta = {} }) {
   );
 }
 
+function MonthlySummaryTable({ rows = [] }) {
+  return (
+    <section className="panel monthly-summary-panel">
+      <div className="panel-title compact-panel-title">
+        <div>
+          <h2>分月数据</h2>
+          <p>按当前日期范围汇总每个月的 Cost、CTR、CPC、收入、ROAS 和 Conversions。</p>
+        </div>
+      </div>
+      <div className="table-wrap monthly-summary-wrap">
+        <table className="monthly-summary-table">
+          <thead>
+            <tr>
+              <th className="align-left">Month</th>
+              <th>Cost</th>
+              <th>CTR</th>
+              <th>CPC</th>
+              <th>Con. Value</th>
+              <th>ROAS</th>
+              <th>Conversions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length ? rows.map((row) => (
+              <tr key={row.month}>
+                <td className="align-left monthly-name">{row.monthName} {row.year}</td>
+                <td>{formatMoney(row.cost)}</td>
+                <td>{formatRate(row.ctr)}</td>
+                <td>{formatCpc(row.cpc)}</td>
+                <td>{formatMoney(row.conversionValue)}</td>
+                <td>{formatMetric(row.roas, "roas")}</td>
+                <td>{formatNumber(row.conversions)}</td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan={7} className="benchmark-empty-row">暂无可用的分月数据。</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function Ga4KpiGrid({ summary = {}, delta = {} }) {
   const current = summary.current ?? summary;
   const previous = summary.previous ?? {};
@@ -1378,6 +1423,7 @@ function App() {
       <>
         <ViewHeading eyebrow="Account overview" title="Overall" description="全账户 *BM Campaign 的总体表现、品牌结构与渠道分布。" />
         <KpiGrid summary={data?.summary} delta={data?.summary?.delta} />
+        <MonthlySummaryTable rows={data?.monthlySummary ?? []} />
         <ChartPanel
           data={mergeSeries(
             (brandFilter === "all" ? data?.series?.current : data?.brandSeries?.[brandFilter]?.current),
